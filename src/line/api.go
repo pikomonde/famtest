@@ -96,7 +96,7 @@ func Webhook(c *gin.Context) {
 	}
 
 	// Push Message
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 250; i++ {
 		if _, err := bot.PushMessage(webhookObj.Events[0].Source.UserID, linebot.NewTextMessage("Hello >> "+strconv.FormatInt(int64(i), 10))).Do(); err != nil {
 			log.Println(err)
 			return
