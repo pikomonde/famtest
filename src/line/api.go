@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/line/line-bot-sdk-go/linebot"
@@ -83,13 +84,20 @@ func Webhook(c *gin.Context) {
 		return
 	}
 
+	// Reply Message
 	bot, err := linebot.New(os.Getenv("CHANNELSECRET"), os.Getenv("CHANNELTOKEN"))
 	if err != nil {
 		log.Println(err)
 		return
 	}
+	if _, err := bot.ReplyMessage(webhookObj.Events[0].ReplyToken, linebot.NewTextMessage(webhookObj.Events[0].Message.Text)).Do(); err != nil {
+		log.Println(err)
+		return
+	}
+
+	// Push Message
 	for i := 0; i < 10000; i++ {
-		if _, err := bot.ReplyMessage(webhookObj.Events[0].ReplyToken, linebot.NewTextMessage(webhookObj.Events[0].Message.Text)).Do(); err != nil {
+		if _, err := bot.PushMessage(webhookObj.Events[0].Source.UserID, linebot.NewTextMessage("Hello >> "+strconv.FormatInt(int64(i), 10))).Do(); err != nil {
 			log.Println(err)
 			return
 		}
