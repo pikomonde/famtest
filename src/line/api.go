@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -65,7 +66,7 @@ func Webhook(c *gin.Context) {
 		log.Println(err)
 		return
 	}
-	hash := hmac.New(sha256.New, []byte("<channel secret>"))
+	hash := hmac.New(sha256.New, []byte(os.Getenv("CHANNELSECRET")))
 	hash.Write(body)
 
 	hmac.Equal(decoded, hash.Sum(nil))
@@ -76,6 +77,8 @@ func Webhook(c *gin.Context) {
 	fmt.Println("===> A")
 	var result WebhookEvents
 	err = json.Unmarshal(body, &result)
+	fmt.Println(os.Getenv("CHANNELSECRET"))
+	fmt.Println(hmac.Equal(decoded, hash.Sum(nil)))
 	fmt.Println(result)
 	fmt.Println(result.Events[0].Message.Text)
 }
