@@ -11,6 +11,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/line/line-bot-sdk-go/linebot"
 )
 
 type WebhookEvents struct {
@@ -69,16 +70,28 @@ func Webhook(c *gin.Context) {
 	hash := hmac.New(sha256.New, []byte(os.Getenv("CHANNELSECRET")))
 	hash.Write(body)
 
-	hmac.Equal(decoded, hash.Sum(nil))
+	if !hmac.Equal(decoded, hash.Sum(nil)) {
+		log.Println("HMAC not equal")
+		return
+	}
 
-	//c.JSON(200, gin.H{
-	//	"message": "pong",
-	//})
 	fmt.Println("===> A")
-	var result WebhookEvents
-	err = json.Unmarshal(body, &result)
-	fmt.Println(os.Getenv("CHANNELSECRET"))
-	fmt.Println(hmac.Equal(decoded, hash.Sum(nil)))
-	fmt.Println(result)
-	fmt.Println(result.Events[0].Message.Text)
+	var webhookObj WebhookEvents
+	err = json.Unmarshal(body, &webhookObj)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	fmt.Println(webhookObj)
+	fmt.Println(webhookObj.Events[0].Message.Text)
+
+	bot, err := linebot.New(os.Getenv("CHANNELSECRET"), os.Getenv("CHANNELTOKEN"))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	if _, err := bot.ReplyMessage(webhookObj.Events[0].ReplyToken, linebot.NewTextMessage(webhookObj.Events[0].Message.Text)).Do(); err != nil {
+		log.Println(err)
+		return
+	}
 }
