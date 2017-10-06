@@ -82,16 +82,16 @@ func Webhook(c *gin.Context) {
 		log.Println(err)
 		return
 	}
-	fmt.Println(webhookObj)
-	fmt.Println(webhookObj.Events[0].Message.Text)
 
 	bot, err := linebot.New(os.Getenv("CHANNELSECRET"), os.Getenv("CHANNELTOKEN"))
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	if _, err := bot.ReplyMessage(webhookObj.Events[0].ReplyToken, linebot.NewTextMessage(webhookObj.Events[0].Message.Text)).Do(); err != nil {
-		log.Println(err)
-		return
+	for i := 0; i < 10000; i++ {
+		if _, err := bot.ReplyMessage(webhookObj.Events[0].ReplyToken, linebot.NewTextMessage(webhookObj.Events[0].Message.Text)).Do(); err != nil {
+			log.Println(err)
+			return
+		}
 	}
 }
