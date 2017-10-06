@@ -10,7 +10,7 @@ func main() {
 	r.GET("/ping", ping)
 
 	// Line API
-	r.GET("/line/ping", line.Ping)
+	r.POST("/line/webhook", line.Webhook)
 
 	r.Run()
 }
