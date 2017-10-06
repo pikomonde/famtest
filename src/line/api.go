@@ -1,10 +1,10 @@
 package line
 
 import (
-	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -32,6 +32,7 @@ func Webhook(c *gin.Context) {
 	//	"message": "pong",
 	//})
 	fmt.Println("===> A")
-	n := bytes.IndexByte(body, 0)
-	fmt.Println(string(body[:n]))
+	var result interface{}
+	err = json.Unmarshal(body, &result)
+	fmt.Println(result)
 }
