@@ -91,18 +91,26 @@ func Webhook(c *gin.Context) {
 }
 
 func EventMessageJoin(webhookObj WebhookEvents) {
+	var v []byte
 	fambot.DB.Update(func(tx *bolt.Tx) error {
-		b, _ := tx.CreateBucketIfNotExists([]byte("MyBucket"))
-		_ = b.Put([]byte("answer"), []byte("42"))
-		v := b.Get([]byte("answer"))
-		fmt.Printf("The answer is: %s\n", v)
-		if _, err := LINE.Bot.ReplyMessage(webhookObj.Events[0].ReplyToken, linebot.NewTextMessage(webhookObj.Events[0].Message.Text)).Do(); err != nil {
-			log.Println("[LineWebhook] " + err.Error())
+		b, err := tx.CreateBucketIfNotExists([]byte("MyBucket"))
+		if err != nil {
+			log.Println("[EventMessageJoin]: " + err.Error())
 			return err
 		}
+		err = b.Put([]byte("answer"), []byte("42"))
+		if err != nil {
+			log.Println("[EventMessageJoin]: " + err.Error())
+			return err
+		}
+		v = b.Get([]byte("answer"))
 		return nil
 	})
-
+	msg := fmt.Sprintf("The answer is: %s\n", v)
+	if _, err := LINE.Bot.ReplyMessage(webhookObj.Events[0].ReplyToken, linebot.NewTextMessage(msg)).Do(); err != nil {
+		log.Println("[LineWebhook] " + err.Error())
+		return
+	}
 }
 
 func EventMessageScore(webhookObj WebhookEvents) {
