@@ -1,6 +1,14 @@
 package fambot
 
-import "time"
+import (
+	"time"
+
+	"github.com/boltdb/bolt"
+)
+
+func init() {
+	initDB()
+}
 
 // ==== Game Setting ====
 const MINIMUM_PLAYER = 3
@@ -47,4 +55,16 @@ func (game GameInfo) ResetJoinedPlayer() {
 	for i, _ := range game.Players {
 		game.Players[i].IsJoin = false
 	}
+}
+
+// ==== Database Setting (BoltDB) ====
+var DB *bolt.DB
+
+func initDB() {
+	// Open the my.db data file in your current directory.
+	// It will be created if it doesn't exist.
+	DB, _ = bolt.Open("my.db", 0600, nil)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
 }

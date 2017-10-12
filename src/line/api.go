@@ -5,11 +5,14 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 
+	"github.com/boltdb/bolt"
 	"github.com/gin-gonic/gin"
+	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/pikomonde/fam100bot/src/fambot"
 )
 
@@ -19,6 +22,14 @@ var GAMES []fambot.GameInfo
 func Init() {
 	LINE.ChannelSecret = os.Getenv("CHANNELSECRET")
 	LINE.ChannelToken = os.Getenv("CHANNELTOKEN")
+
+	// Set Bot
+	var err error
+	LINE.Bot, _ = linebot.New(LINE.ChannelSecret, LINE.ChannelToken)
+	if err != nil {
+		log.Println("[LineWebhook] " + err.Error())
+		return
+	}
 }
 
 func Webhook(c *gin.Context) {
@@ -51,9 +62,9 @@ func Webhook(c *gin.Context) {
 	if webhookObj.Events[0].Message.Type == "text" {
 		userMsg := webhookObj.Events[0].Message.Text
 		if userMsg == fambot.CMD_JOIN {
-			EventMessageJoin()
+			EventMessageJoin(webhookObj)
 		} else if userMsg == fambot.CMD_SCORE {
-			EventMessageScore()
+			EventMessageScore(webhookObj)
 		}
 	}
 
@@ -79,10 +90,21 @@ func Webhook(c *gin.Context) {
 	//}
 }
 
-func EventMessageJoin() {
+func EventMessageJoin(webhookObj WebhookEvents) {
+	fambot.DB.Update(func(tx *bolt.Tx) error {
+		b, _ := tx.CreateBucketIfNotExists([]byte("MyBucket"))
+		_ = b.Put([]byte("answer"), []byte("42"))
+		v := b.Get([]byte("answer"))
+		fmt.Printf("The answer is: %s\n", v)
+		if _, err := LINE.Bot.ReplyMessage(webhookObj.Events[0].ReplyToken, linebot.NewTextMessage(webhookObj.Events[0].Message.Text)).Do(); err != nil {
+			log.Println("[LineWebhook] " + err.Error())
+			return err
+		}
+		return nil
+	})
 
 }
 
-func EventMessageScore() {
+func EventMessageScore(webhookObj WebhookEvents) {
 
 }

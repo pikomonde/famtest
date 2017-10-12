@@ -1,8 +1,11 @@
 package line
 
+import "github.com/line/line-bot-sdk-go/linebot"
+
 type LineSetting struct {
 	ChannelSecret string
 	ChannelToken  string
+	Bot           *linebot.Client
 }
 
 // ==== Webhook ====
