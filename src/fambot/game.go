@@ -48,5 +48,3 @@ func (game GameInfo) ResetJoinedPlayer() {
 		game.Players[i].IsJoin = false
 	}
 }
-
-// ==== Database Setting ====
