@@ -3,6 +3,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "J+kVue/HTH4sELlqMO4z0tx9DiA=",
+			"path": "github.com/boltdb/bolt",
+			"revision": "e9cf4fae01b5a8ff89d0ec6b32f0d9c9f79aefdd",
+			"revisionTime": "2017-01-31T19:20:18Z"
+		},
+		{
 			"checksumSHA1": "QeKwBtN2df+j+4stw3bQJ6yO4EY=",
 			"path": "github.com/gin-contrib/sse",
 			"revision": "22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae",
