@@ -19,7 +19,7 @@ import (
 var LINE LineSetting
 var GAMES []fambot.GameInfo
 
-func Init() {
+func init() {
 	LINE.ChannelSecret = os.Getenv("CHANNELSECRET")
 	LINE.ChannelToken = os.Getenv("CHANNELTOKEN")
 	log.Println(LINE.ChannelSecret)
