@@ -22,8 +22,6 @@ var GAMES []fambot.GameInfo
 func init() {
 	LINE.ChannelSecret = os.Getenv("CHANNELSECRET")
 	LINE.ChannelToken = os.Getenv("CHANNELTOKEN")
-	log.Println(LINE.ChannelSecret)
-	log.Println(LINE.ChannelToken)
 
 	// Set Bot
 	var err error
@@ -45,8 +43,7 @@ func Webhook(c *gin.Context) {
 		log.Println("[LineWebhook] " + err.Error())
 		return
 	}
-	log.Println("B>>>> " + LINE.ChannelSecret)
-	log.Println("B>>>> " + LINE.ChannelToken)
+
 	hash := hmac.New(sha256.New, []byte(LINE.ChannelSecret))
 	hash.Write(body)
 
