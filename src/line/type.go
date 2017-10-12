@@ -5,6 +5,7 @@ type LineSetting struct {
 	ChannelToken  string
 }
 
+// ==== Webhook ====
 type WebhookEvents struct {
 	Events []WebhookEvent `json:"events"`
 }
