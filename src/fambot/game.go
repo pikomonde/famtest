@@ -1,6 +1,8 @@
 package fambot
 
 import (
+	"encoding/json"
+	"log"
 	"time"
 
 	"github.com/boltdb/bolt"
@@ -17,44 +19,125 @@ const CMD_SCORE = "score"
 
 type GameInfo struct {
 	RoomID    string
-	Players   []PlayerInfo
+	Players   map[string]PlayerInfo
 	Question  QuestionInfo
 	UpdatedAt time.Time
 }
 type PlayerInfo struct {
-	PlayerID string
-	Score    int
-	IsJoin   bool
+	PlayerID    string
+	ScoreRound  int
+	ScoreRoom   int
+	IsJoinRound bool
 }
 type QuestionInfo struct {
-	QuestionID string
-	Answered   int
+	QuestionID   string
+	QuestionText string
+	Answer       []AnswerInfo
+}
+type AnswerInfo struct {
+	AnswerText string
+	Score      int
+	Answered   bool
 }
 
-func (game GameInfo) IsStarted() bool {
+func (game *GameInfo) IsStarted() bool {
 	return game.NumOfJoinedPlayer() >= MINIMUM_PLAYER
 }
-func (game GameInfo) NumOfJoinedPlayer() int {
+
+// NumOfJoinedPlayer used to count numbers of joined player
+func (game *GameInfo) NumOfJoinedPlayer() int {
 	var total int
 	for _, p := range game.Players {
-		if p.IsJoin {
+		if p.IsJoinRound {
 			total++
 		}
 	}
 	return total
 }
-func (game GameInfo) IsExpired(ns int64) bool {
-	duration := time.Since(game.UpdatedAt)
-	isExpired := duration.Nanoseconds() > ns
-	if isExpired {
-		game.ResetJoinedPlayer()
-	}
-	return isExpired
-}
-func (game GameInfo) ResetJoinedPlayer() {
+
+//func (game *GameInfo) IsExpired(ns int64) bool {
+//	duration := time.Since(game.UpdatedAt)
+//	isExpired := duration.Nanoseconds() > ns
+//	if isExpired {
+//		game.ResetJoinedPlayer()
+//	}
+//	return isExpired
+//}
+
+func (game *GameInfo) ResetJoinedPlayer() {
 	for i, _ := range game.Players {
-		game.Players[i].IsJoin = false
+		v := game.Players[i]
+		v.IsJoinRound = false
+		game.Players[i] = v
 	}
+}
+
+func (game *GameInfo) SetNewQuestions() {
+	// TODO:
+}
+
+func (game *GameInfo) LoadGameInfoByRoomID(rID string) {
+	DB.Update(func(tx *bolt.Tx) error {
+		b, err := tx.CreateBucketIfNotExists([]byte("GameRoom"))
+		if err != nil {
+			log.Println("[LoadGameInfoByRoomID]: " + err.Error())
+			return err
+		}
+
+		v := b.Get([]byte(rID))
+		err = json.Unmarshal(v, game)
+		if err != nil {
+			log.Println("[LoadGameInfoByRoomID]: " + err.Error())
+			return err
+		}
+		return nil
+	})
+}
+
+func (game *GameInfo) SaveGameInfoByRoomID(rID string) {
+	DB.Update(func(tx *bolt.Tx) error {
+		b, err := tx.CreateBucketIfNotExists([]byte("GameRoom"))
+		if err != nil {
+			log.Println("[SaveGameInfoByRoomID]: " + err.Error())
+			return err
+		}
+
+		v, err := json.Marshal(game)
+		if err != nil {
+			log.Println("[SaveGameInfoByRoomID]: " + err.Error())
+			return err
+		}
+
+		err = b.Put([]byte(rID), []byte(v))
+		if err != nil {
+			log.Println("[SaveGameInfoByRoomID]: " + err.Error())
+			return err
+		}
+		return nil
+	})
+}
+
+func (game *GameInfo) CreateUserIfNotListed(uID string) {
+	if game.Players == nil {
+		game.Players = make(map[string]PlayerInfo)
+	}
+	if _, exist := game.Players[uID]; !exist {
+		game.createUser(uID)
+	}
+}
+
+func (game *GameInfo) createUser(uID string) {
+	game.Players[uID] = PlayerInfo{
+		PlayerID:    uID,
+		ScoreRound:  0,
+		ScoreRoom:   0,
+		IsJoinRound: false,
+	}
+}
+
+// ==== Gameplay Here ====
+func (game *GameInfo) StartWaitingRoom() {
+	// TODO:
 }
 
 // ==== Database Setting (BoltDB) ====

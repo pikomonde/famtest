@@ -1,15 +1,27 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/gin-gonic/gin"
-	line "github.com/pikomonde/fam100bot/src/line"
+	"github.com/pikomonde/fam100bot/src/line"
 )
 
 func main() {
+	if os.Getenv("ENV") == "dev" {
+		fmt.Println("==== FAM100BOT ====")
+		for {
+			var uID, msg string
+			fmt.Scan(&uID, &msg)
+			line.SimulateWebhook(uID, msg)
+		}
+	}
+
 	r := gin.New()
 	r.GET("/ping", ping)
 
-	// Line API
+	// Webhook Endpoint
 	r.POST("/line/webhook", line.Webhook)
 
 	r.Run()

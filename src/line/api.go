@@ -5,19 +5,19 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"time"
 
-	"github.com/boltdb/bolt"
 	"github.com/gin-gonic/gin"
 	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/pikomonde/fam100bot/src/fambot"
 )
 
 var LINE LineSetting
-var GAMES []fambot.GameInfo
+
+//var GAMES fambot.GameInfo
 
 func init() {
 	LINE.ChannelSecret = os.Getenv("CHANNELSECRET")
@@ -60,12 +60,18 @@ func Webhook(c *gin.Context) {
 		return
 	}
 
-	if webhookObj.Events[0].Message.Type == "text" {
-		userMsg := webhookObj.Events[0].Message.Text
-		if userMsg == fambot.CMD_JOIN {
-			EventMessageJoin(webhookObj)
-		} else if userMsg == fambot.CMD_SCORE {
-			EventMessageScore(webhookObj)
+	if webhookObj[0].Type == "join" {
+		EventJoin(webhookObj)
+	} else if webhookObj[0].Type == "message" {
+		if webhookObj[0].Message.Type == "text" {
+			userMsg := webhookObj[0].Message.Text
+			if userMsg == fambot.CMD_JOIN {
+				EventMessageJoin(webhookObj)
+			} else if userMsg == fambot.CMD_SCORE {
+				EventMessageScore(webhookObj)
+			} else {
+				EventMessageAny(webhookObj)
+			}
 		}
 	}
 
@@ -91,29 +97,150 @@ func Webhook(c *gin.Context) {
 	//}
 }
 
-func EventMessageJoin(webhookObj WebhookEvents) {
-	var v []byte
-	fambot.DB.Update(func(tx *bolt.Tx) error {
-		b, err := tx.CreateBucketIfNotExists([]byte("MyBucket"))
-		if err != nil {
-			log.Println("[EventMessageJoin]: " + err.Error())
-			return err
+func SimulateWebhook(userID, msg string) {
+	// Sample Webhook
+	webhookObj := []WebhookEvent{WebhookEvent{
+		ReplyToken: "QWE",
+		Type:       "message",
+		Timestamp:  1462629479859,
+		Source: WebhookSource{
+			Type:   "room", // user, group, room
+			RoomID: "000000XXXXX",
+			UserID: userID,
+		},
+		Message: WebhookMessage{
+			Type: "text",
+			Text: msg,
+		},
+	}}
+
+	EventJoin(webhookObj)
+	if webhookObj[0].Message.Type == "text" {
+		userMsg := webhookObj[0].Message.Text
+		if userMsg == fambot.CMD_JOIN {
+			EventMessageJoin(webhookObj)
+		} else if userMsg == fambot.CMD_SCORE {
+			EventMessageScore(webhookObj)
+		} else {
+			EventMessageAny(webhookObj)
 		}
-		err = b.Put([]byte("answer"), []byte("42"))
-		if err != nil {
-			log.Println("[EventMessageJoin]: " + err.Error())
-			return err
-		}
-		v = b.Get([]byte("answer"))
-		return nil
-	})
-	msg := fmt.Sprintf("The answer is: %s\n", v)
-	if _, err := LINE.Bot.ReplyMessage(webhookObj.Events[0].ReplyToken, linebot.NewTextMessage(msg)).Do(); err != nil {
-		log.Println("[LineWebhook] " + err.Error())
-		return
 	}
 }
 
-func EventMessageScore(webhookObj WebhookEvents) {
+func EventJoin(webhookObj WebhookEvents) {
+	// Set Variables Game, UserID, GameRoomID
+	var game fambot.GameInfo
+	gameRoomID := BOT_TYPE_LINE + webhookObj.GetMetaGameRoomID()
 
+	// Load Game Info Data
+	game.LoadGameInfoByRoomID(gameRoomID)
+
+	// Add RoomID
+	game.RoomID = gameRoomID
+
+	// Call and Append Players
+	// TODO: Hit the LINE API to get list of user in a room
+	uID := "QQQ"
+	if game.Players == nil {
+		game.Players = make(map[string]fambot.PlayerInfo)
+	}
+	game.CreateUserIfNotListed(uID)
+
+	// Save Game Info Data
+	game.SaveGameInfoByRoomID(gameRoomID)
+}
+
+func EventMessageJoin(webhookObj WebhookEvents) {
+	// Set Variables Game, UserID, GameRoomID
+	var game fambot.GameInfo
+	userID := BOT_TYPE_LINE + SOURCE_TYPE_USER + webhookObj[0].Source.UserID
+	gameRoomID := BOT_TYPE_LINE + webhookObj.GetMetaGameRoomID()
+
+	// Load Game Info Data
+	game.LoadGameInfoByRoomID(gameRoomID)
+
+	// Set Game Info value
+	if !game.IsStarted() {
+		// Hosting the game
+		if game.NumOfJoinedPlayer() == 0 {
+			game.ResetJoinedPlayer()
+			game.SetNewQuestions()
+			game.UpdatedAt = time.Now()
+			go game.StartWaitingRoom()
+		}
+
+		// Set Join Round Info To determined number of player join
+		game.CreateUserIfNotListed(userID)
+		v := game.Players[userID]
+		v.IsJoinRound = true
+		game.Players[userID] = v
+
+		// Save Game Info Data
+		game.SaveGameInfoByRoomID(gameRoomID)
+	}
+
+	//game.Players = append(game.Players, fambot.PlayerInfo{
+	//	PlayerID:    "qweqwe",
+	//	RoomScore:   100,
+	//	RoundScore:  30,
+	//	IsJoinRound: true,
+	//})
+	//game.Players = append(game.Players, fambot.PlayerInfo{
+	//	PlayerID:    "qweqweWWW",
+	//	RoomScore:   1020,
+	//	RoundScore:  320,
+	//	IsJoinRound: false,
+	//})
+	//fambot.DB.Update(func(tx *bolt.Tx) error {
+	//	b, err := tx.CreateBucketIfNotExists([]byte("GameRoom"))
+	//	if err != nil {
+	//		log.Println("[EventMessageJoin]: " + err.Error())
+	//		return err
+	//	}
+	//
+	//	v, _ := json.Marshal(game)
+	//	err = b.Put([]byte("LNRM000000XXXXX"), []byte(v))
+	//	if err != nil {
+	//		log.Println("[EventMessageJoin]: " + err.Error())
+	//		return err
+	//	}
+	//	return nil
+	//})
+	//var game2 fambot.GameInfo
+	//msg := fmt.Sprintf("%v\n", game)
+	//fmt.Println(msg)
+	//fmt.Println(game.Players[0].PlayerID)
+	//fmt.Println(game.NumOfJoinedPlayer())
+	//if _, err := LINE.Bot.ReplyMessage(webhookObj.Events[0].ReplyToken, linebot.NewTextMessage(msg)).Do(); err != nil {
+	//	log.Println("[LineWebhook] " + err.Error())
+	//	return
+	//}
+}
+
+func EventMessageScore(webhookObj WebhookEvents) {
+	// TODO:
+}
+
+func EventMessageAny(webhookObj WebhookEvents) {
+	// Set Variables Game, UserID, GameRoomID
+	var game fambot.GameInfo
+	userID := BOT_TYPE_LINE + SOURCE_TYPE_USER + webhookObj[0].Source.UserID
+	gameRoomID := BOT_TYPE_LINE + webhookObj.GetMetaGameRoomID()
+
+	// Load Game Info Data
+	game.LoadGameInfoByRoomID(gameRoomID)
+
+	// Set Game Info value
+	if game.IsStarted() {
+		// Set Join Round Info To determined number of player join
+		game.CreateUserIfNotListed(userID)
+		v := game.Players[userID]
+		v.IsJoinRound = true
+		game.Players[userID] = v
+
+		// TODO: Add game.Answer(userID, msg)
+
+		// Save Game Info Data
+		game.SaveGameInfoByRoomID(gameRoomID)
+	}
 }

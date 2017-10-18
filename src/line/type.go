@@ -8,10 +8,23 @@ type LineSetting struct {
 	Bot           *linebot.Client
 }
 
-// ==== Webhook ====
-type WebhookEvents struct {
-	Events []WebhookEvent `json:"events"`
+var SourceType = map[string]string{
+	"group": "GR",
+	"room":  "RM",
+	"user":  "US",
 }
+
+const (
+	BOT_TYPE_LINE = "LN"
+
+	SOURCE_TYPE_GROUP = "GR"
+	SOURCE_TYPE_ROOM  = "RM"
+	SOURCE_TYPE_USER  = "US"
+)
+
+// ==== Webhook ====
+type WebhookEvents []WebhookEvent
+
 type WebhookEvent struct {
 	ReplyToken string          `json:"replyToken"`
 	Type       string          `json:"type"`
@@ -49,4 +62,13 @@ type WebhookBeacon struct {
 	HwID string `json:"hwid"`
 	Type string `json:"type"`
 	DM   string `json:"dm"`
+}
+
+func (webhookObj WebhookEvents) GetMetaGameRoomID() (grID string) {
+	if SourceType[webhookObj[0].Source.Type] == SOURCE_TYPE_GROUP {
+		grID = SOURCE_TYPE_GROUP + webhookObj[0].Source.GroupID
+	} else if SourceType[webhookObj[0].Source.Type] == SOURCE_TYPE_ROOM {
+		grID = SOURCE_TYPE_GROUP + webhookObj[0].Source.RoomID
+	}
+	return
 }
