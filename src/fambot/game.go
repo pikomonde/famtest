@@ -16,9 +16,17 @@ func init() {
 var ConsoleVersion = false
 
 // ==== Game Setting ====
-const MINIMUM_PLAYER = 3
-const CMD_JOIN = "join"
-const CMD_SCORE = "score"
+const (
+	MinimumPlayer     = 3
+	RoundPerGame      = 3
+	QuorumDuration    = 120 * time.Second
+	RoundDuration     = 90 * time.Second
+	TickDuration      = 10 * time.Second
+	DelayBetweenRound = 5 * time.Second
+
+	CMD_JOIN  = "join"
+	CMD_SCORE = "score"
+)
 
 type GameInfo struct {
 	RoomID    string
@@ -27,10 +35,10 @@ type GameInfo struct {
 	UpdatedAt time.Time
 }
 type PlayerInfo struct {
-	PlayerID    string
-	ScoreRound  int
-	ScoreRoom   int
-	IsJoinRound bool
+	PlayerID   string
+	ScoreGame  int
+	ScoreRoom  int
+	IsJoinGame bool
 }
 type QuestionInfo struct {
 	QuestionID   string
@@ -44,14 +52,14 @@ type AnswerInfo struct {
 }
 
 func (game *GameInfo) IsStarted() bool {
-	return game.NumOfJoinedPlayer() >= MINIMUM_PLAYER
+	return game.NumOfJoinedPlayer() >= MinimumPlayer
 }
 
 // NumOfJoinedPlayer used to count numbers of joined player
 func (game *GameInfo) NumOfJoinedPlayer() int {
 	var total int
 	for _, p := range game.Players {
-		if p.IsJoinRound {
+		if p.IsJoinGame {
 			total++
 		}
 	}
@@ -70,7 +78,7 @@ func (game *GameInfo) NumOfJoinedPlayer() int {
 func (game *GameInfo) ResetJoinedPlayer() {
 	for i, _ := range game.Players {
 		v := game.Players[i]
-		v.IsJoinRound = false
+		v.IsJoinGame = false
 		game.Players[i] = v
 	}
 }
@@ -122,10 +130,10 @@ func (game *GameInfo) SaveGameInfoByRoomID(rID string) {
 
 func (game *GameInfo) JoinRoundIfNotJoined(uID string) (isUpdated bool) {
 	isUpdated = false
-	if !game.Players[uID].IsJoinRound {
+	if !game.Players[uID].IsJoinGame {
 		isUpdated = true
 		v := game.Players[uID]
-		v.IsJoinRound = true
+		v.IsJoinGame = true
 		game.Players[uID] = v
 	}
 	return isUpdated
@@ -145,10 +153,10 @@ func (game *GameInfo) CreateUserIfNotListed(uID string) (isUpdated bool) {
 
 func (game *GameInfo) createUser(uID string) {
 	game.Players[uID] = PlayerInfo{
-		PlayerID:    uID,
-		ScoreRound:  0,
-		ScoreRoom:   0,
-		IsJoinRound: false,
+		PlayerID:   uID,
+		ScoreGame:  0,
+		ScoreRoom:  0,
+		IsJoinGame: false,
 	}
 }
 
