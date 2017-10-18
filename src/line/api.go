@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -164,7 +163,7 @@ func EventMessageJoin(webhookObj WebhookEvents) {
 	if !game.IsStarted() {
 		// Hosting the game
 		if game.NumOfJoinedPlayer() == 0 {
-			fmt.Println("==> User " + userID + " is the host")
+			game.Println("User " + userID + " is the host")
 			game.ResetJoinedPlayer()
 			game.SetNewQuestions()
 			game.UpdatedAt = time.Now()
@@ -174,7 +173,7 @@ func EventMessageJoin(webhookObj WebhookEvents) {
 		// Set Join Round Info To determined number of player join
 		game.CreateUserIfNotListed(userID)
 		if isUpdated := game.JoinRoundIfNotJoined(userID); isUpdated {
-			fmt.Println("==> User " + userID + " join the game")
+			game.Println("User " + userID + " join the game")
 		}
 
 		// Save Game Info Data
@@ -241,7 +240,7 @@ func EventMessageAny(webhookObj WebhookEvents) {
 		game.Players[userID] = v
 
 		// TODO: Add game.Answer(userID, msg)
-		fmt.Println("==> User " + userID + " answer " + webhookObj[0].Message.Text)
+		game.Println("User " + userID + " answer " + webhookObj[0].Message.Text)
 
 		// Save Game Info Data
 		game.SaveGameInfoByRoomID(gameRoomID)

@@ -5,11 +5,13 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/pikomonde/fam100bot/src/fambot"
 	"github.com/pikomonde/fam100bot/src/line"
 )
 
 func main() {
 	if os.Getenv("ENV") == "dev" {
+		fambot.ConsoleVersion = true
 		fmt.Println("==== FAM100BOT ====")
 		for {
 			var uID, msg string

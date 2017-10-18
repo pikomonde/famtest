@@ -2,6 +2,7 @@ package fambot
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
@@ -11,6 +12,8 @@ import (
 func init() {
 	initDB()
 }
+
+var ConsoleVersion = false
 
 // ==== Game Setting ====
 const MINIMUM_PLAYER = 3
@@ -146,6 +149,12 @@ func (game *GameInfo) createUser(uID string) {
 		ScoreRound:  0,
 		ScoreRoom:   0,
 		IsJoinRound: false,
+	}
+}
+
+func (game *GameInfo) Println(msg string) {
+	if ConsoleVersion {
+		fmt.Println("==> " + msg)
 	}
 }
 
