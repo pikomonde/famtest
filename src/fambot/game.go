@@ -117,13 +117,27 @@ func (game *GameInfo) SaveGameInfoByRoomID(rID string) {
 	})
 }
 
-func (game *GameInfo) CreateUserIfNotListed(uID string) {
+func (game *GameInfo) JoinRoundIfNotJoined(uID string) (isUpdated bool) {
+	isUpdated = false
+	if !game.Players[uID].IsJoinRound {
+		isUpdated = true
+		v := game.Players[uID]
+		v.IsJoinRound = true
+		game.Players[uID] = v
+	}
+	return isUpdated
+}
+
+func (game *GameInfo) CreateUserIfNotListed(uID string) (isUpdated bool) {
+	isUpdated = false
 	if game.Players == nil {
 		game.Players = make(map[string]PlayerInfo)
 	}
 	if _, exist := game.Players[uID]; !exist {
+		isUpdated = true
 		game.createUser(uID)
 	}
+	return isUpdated
 }
 
 func (game *GameInfo) createUser(uID string) {
