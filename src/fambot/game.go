@@ -21,8 +21,8 @@ const (
 	RoundPerGame      = 3
 	QuorumDuration    = 120 * time.Second
 	RoundDuration     = 90 * time.Second
-	TickDuration      = 10 * time.Second
 	DelayBetweenRound = 5 * time.Second
+	TickDuration      = 5 * time.Second
 
 	CMD_JOIN  = "join"
 	CMD_SCORE = "score"
@@ -168,7 +168,7 @@ func (game *GameInfo) Println(msg string) {
 
 // ==== Gameplay Here ====
 func (game *GameInfo) StartWaitingRoom() {
-	// TODO:
+	// TODO: Learn how to make threadng (event based)
 }
 
 // ==== Database Setting (BoltDB) ====

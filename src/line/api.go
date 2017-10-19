@@ -236,7 +236,7 @@ func EventMessageAny(webhookObj WebhookEvents) {
 		// Set Join Round Info To determined number of player join
 		game.CreateUserIfNotListed(userID)
 		v := game.Players[userID]
-		v.IsJoinRound = true
+		v.IsJoinGame = true
 		game.Players[userID] = v
 
 		// TODO: Add game.Answer(userID, msg)
