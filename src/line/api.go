@@ -160,14 +160,14 @@ func EventMessageJoin(webhookObj WebhookEvents) {
 	game.LoadGameInfoByRoomID(gameRoomID)
 
 	// Set Game Info value
-	if !game.IsStarted() {
+	if ok, _ := game.IsStarted(); !ok {
 		// Hosting the game
 		if game.NumOfJoinedPlayer() == 0 {
 			game.Println("User " + userID + " is the host")
 			game.ResetJoinedPlayer()
 			game.SetNewQuestions()
 			game.UpdatedAt = time.Now()
-			go game.StartWaitingRoom()
+			defer game.HostGame(gameRoomID)
 		}
 
 		// Set Join Round Info To determined number of player join
@@ -232,7 +232,7 @@ func EventMessageAny(webhookObj WebhookEvents) {
 	game.LoadGameInfoByRoomID(gameRoomID)
 
 	// Set Game Info value
-	if game.IsStarted() {
+	if ok, _ := game.IsStarted(); ok {
 		// Set Join Round Info To determined number of player join
 		game.CreateUserIfNotListed(userID)
 		v := game.Players[userID]

@@ -22,7 +22,7 @@ const (
 	QuorumDuration    = 120 * time.Second
 	RoundDuration     = 90 * time.Second
 	DelayBetweenRound = 5 * time.Second
-	TickDuration      = 5 * time.Second
+	TickDuration      = 10 * time.Second
 
 	CMD_JOIN  = "join"
 	CMD_SCORE = "score"
@@ -31,7 +31,7 @@ const (
 type GameInfo struct {
 	RoomID    string
 	Players   map[string]PlayerInfo
-	Question  QuestionInfo
+	Round     RoundInfo
 	UpdatedAt time.Time
 }
 type PlayerInfo struct {
@@ -40,10 +40,11 @@ type PlayerInfo struct {
 	ScoreRoom  int
 	IsJoinGame bool
 }
-type QuestionInfo struct {
+type RoundInfo struct {
 	QuestionID   string
 	QuestionText string
 	Answer       []AnswerInfo
+	IsStarted    bool
 }
 type AnswerInfo struct {
 	AnswerText string
@@ -51,8 +52,14 @@ type AnswerInfo struct {
 	Answered   bool
 }
 
-func (game *GameInfo) IsStarted() bool {
-	return game.NumOfJoinedPlayer() >= MinimumPlayer
+func (game *GameInfo) IsStarted() (bool, int) {
+	// TODO: change condition to IsStarter, also consider for isRoundStarted
+	return game.NumOfJoinedPlayer() >= MinimumPlayer, 0
+}
+
+func (game *GameInfo) IsLastRound() bool {
+	// TODO: implement isLastRound()
+	return true
 }
 
 // NumOfJoinedPlayer used to count numbers of joined player
@@ -65,15 +72,6 @@ func (game *GameInfo) NumOfJoinedPlayer() int {
 	}
 	return total
 }
-
-//func (game *GameInfo) IsExpired(ns int64) bool {
-//	duration := time.Since(game.UpdatedAt)
-//	isExpired := duration.Nanoseconds() > ns
-//	if isExpired {
-//		game.ResetJoinedPlayer()
-//	}
-//	return isExpired
-//}
 
 func (game *GameInfo) ResetJoinedPlayer() {
 	for i, _ := range game.Players {
@@ -91,14 +89,14 @@ func (game *GameInfo) LoadGameInfoByRoomID(rID string) {
 	DB.Update(func(tx *bolt.Tx) error {
 		b, err := tx.CreateBucketIfNotExists([]byte("GameRoom"))
 		if err != nil {
-			log.Println("[LoadGameInfoByRoomID]: " + err.Error())
+			log.Println("[LoadGameInfoByRoomID][CreateBucketIfNotExists]: " + err.Error())
 			return err
 		}
 
 		v := b.Get([]byte(rID))
 		err = json.Unmarshal(v, game)
 		if err != nil {
-			log.Println("[LoadGameInfoByRoomID]: " + err.Error())
+			log.Println("[LoadGameInfoByRoomID][Unmarshal game]: " + err.Error())
 			return err
 		}
 		return nil
@@ -167,8 +165,43 @@ func (game *GameInfo) Println(msg string) {
 }
 
 // ==== Gameplay Here ====
-func (game *GameInfo) StartWaitingRoom() {
+func (game *GameInfo) HostGame(rID string) {
 	// TODO: Learn how to make threadng (event based)
+	tick := time.Tick(TickDuration)
+	quorumEnd := time.After(QuorumDuration)
+	var roundEnd <-chan time.Time
+	for {
+		select {
+		case <-quorumEnd:
+			game.LoadGameInfoByRoomID(rID)
+			if ok, _ := game.IsStarted(); !ok {
+				game.Println("WAKTU HABIS, PERMAINAN DIBATALKAN")
+				//game.ResetJoinedPlayer()
+			}
+		case <-roundEnd:
+			game.LoadGameInfoByRoomID(rID)
+			if ok, _ := game.IsStarted(); !ok {
+				if !game.IsLastRound() {
+					game.Println("WAKTU HABIS, RONDE SELANJUTNYA")
+				} else {
+					game.Println("WAKTU HABIS, PERMAIANAN USAI")
+					//game.PrintRoundScore()
+					//game.ResetJoinedPlayer()
+				}
+			}
+
+			roundEnd = time.After(RoundDuration)
+		case <-tick:
+			game.LoadGameInfoByRoomID(rID)
+			if ok, _ := game.IsStarted(); !ok {
+				fmt.Println("BELOM MULAI")
+			} else {
+				if roundEnd == nil {
+					roundEnd = time.After(RoundDuration)
+				}
+			}
+		}
+	}
 }
 
 // ==== Database Setting (BoltDB) ====
