@@ -167,7 +167,7 @@ func EventMessageJoin(webhookObj WebhookEvents) {
 			game.ResetJoinedPlayer()
 			game.SetNewQuestions()
 			game.UpdatedAt = time.Now()
-			defer game.HostGame(gameRoomID)
+			go game.HostGame(gameRoomID)
 		}
 
 		// Set Join Round Info To determined number of player join

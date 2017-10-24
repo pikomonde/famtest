@@ -19,7 +19,7 @@ var ConsoleVersion = false
 const (
 	MinimumPlayer     = 3
 	RoundPerGame      = 3
-	QuorumDuration    = 120 * time.Second
+	QuorumDuration    = 30 * time.Second
 	RoundDuration     = 90 * time.Second
 	DelayBetweenRound = 5 * time.Second
 	TickDuration      = 10 * time.Second
@@ -176,7 +176,9 @@ func (game *GameInfo) HostGame(rID string) {
 			game.LoadGameInfoByRoomID(rID)
 			if ok, _ := game.IsStarted(); !ok {
 				game.Println("WAKTU HABIS, PERMAINAN DIBATALKAN")
-				//game.ResetJoinedPlayer()
+				game.ResetJoinedPlayer()
+				game.SaveGameInfoByRoomID(rID)
+				return
 			}
 		case <-roundEnd:
 			game.LoadGameInfoByRoomID(rID)
@@ -193,12 +195,17 @@ func (game *GameInfo) HostGame(rID string) {
 			roundEnd = time.After(RoundDuration)
 		case <-tick:
 			game.LoadGameInfoByRoomID(rID)
-			if ok, _ := game.IsStarted(); !ok {
-				fmt.Println("BELOM MULAI")
-			} else {
-				if roundEnd == nil {
-					roundEnd = time.After(RoundDuration)
+			if ok, round := game.IsStarted(); ok {
+				if round >= 0 {
+					game.Println("SEDANG BERLANGSUNG")
+					if roundEnd == nil {
+						roundEnd = time.After(RoundDuration)
+					}
+				} else {
+					game.Println("REHAT SEJENAK")
 				}
+			} else {
+				game.Println("BELOM MULAI")
 			}
 		}
 	}
